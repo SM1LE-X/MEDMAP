@@ -2,7 +2,7 @@
 > **AI-powered interactive medical knowledge visualizer** built with React, TypeScript, D3.js, and Gemini API.
 
 MedMap helps medical learners and professionals **understand complex medical concepts visually**.  
-Simply enter a topic — like *“Diabetes Mellitus”* — and watch an intelligent, color-coded mind map unfold showing causes, symptoms, diagnostics, and treatments, powered by AI.
+Simply enter a topic like *“Diabetes Mellitus”* and watch an intelligent, color-coded mind map unfold showing causes, symptoms, diagnostics, and treatments, powered by AI.
 
 ---
 
