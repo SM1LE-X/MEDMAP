@@ -44,7 +44,7 @@ Simply enter a topic — like *“Diabetes Mellitus”* — and watch an intelli
 
 ```bash
 # Clone the repository
-git clone [https://github.com/SM1LE-X/MEDMAP.git]
+git clone https://github.com/SM1LE-X/MEDMAP.git
 cd medmap
 
 # Install dependencies
