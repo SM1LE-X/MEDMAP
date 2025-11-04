@@ -4,20 +4,6 @@
 MedMap helps medical learners and professionals **understand complex medical concepts visually**.  
 Simply enter a topic like *“Diabetes Mellitus”* and watch an intelligent, color-coded mind map unfold showing causes, symptoms, diagnostics, and treatments, powered by AI.
 
----
-
-## 🚀 Features
-
-- 🩺 **AI Concept Generation** — Uses Google’s Gemini API to map out connected medical ideas.
-- 🌐 **Interactive Visualization** — Built with **D3.js** for smooth, dynamic graph rendering.
-- ⚡ **Modern Frontend Stack** — Developed with **React**, **Vite**, and **TypeScript** for fast performance.
-- 🎨 **Beautiful UI** — Gradient backgrounds, glowing particles, and color-coded systems via **Tailwind CSS**.
-- 🧭 **Search History** — Easily revisit previously searched medical topics.
-- 🔒 **Secure API Management** — Environment variables (`.env`) keep your keys safe during development and deployment.
-- 📱 **Fully Responsive** — Works flawlessly on mobile, tablet, and desktop screens.
-
----
-
 ## 🧩 Tech Stack
 
 | Technology | Purpose |
