@@ -21,17 +21,37 @@ const systemColors: { [key: string]: string } = {
 };
 
 export const App: React.FC = () => {
-  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
+  const [graphData, setGraphData] = useState<GraphData>(() => {
+    const saved = localStorage.getItem('medmap-graph');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return { nodes: [], links: [] };
+      }
+    }
+    return { nodes: [], links: [] };
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-const DEFAULT_TOPIC = 'Diabetes Mellitus';
-const [topic, setTopic] = useState('');
-  const [initialLoad, setInitialLoad] = useState(true);
+  const DEFAULT_TOPIC = 'Diabetes Mellitus';
+  const [topic, setTopic] = useState(() => localStorage.getItem('medmap-topic') || '');
+  const [initialLoad, setInitialLoad] = useState(() => {
+    const saved = localStorage.getItem('medmap-graph');
+    if (!saved) return true;
+    try {
+      const parsed = JSON.parse(saved);
+      return !parsed.nodes || parsed.nodes.length === 0;
+    } catch {
+      return true;
+    }
+  });
   const [apiError, setApiError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const historyRef = useRef<HTMLDivElement>(null); // Ref for the entire search/history container
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef<number>(0);
 
 
   const processConcepts = (concepts: MedicalConcept[], centralTopic: string): GraphData => {
@@ -65,38 +85,45 @@ const [topic, setTopic] = useState('');
 
     return { nodes, links };
   };
-  
- const handleGenerateMap = useCallback(async (currentTopic: string, addToHistory: boolean = true) => {
-  // Use DEFAULT_TOPIC if the caller passed an empty string or undefined
-  const topicToUse = (currentTopic || DEFAULT_TOPIC).trim();
-  if (!topicToUse) return;
 
-  setTopic(topicToUse);
-  setIsLoading(true);
-  setSelectedNode(null);
-  setApiError(null);
+  const handleGenerateMap = useCallback(async (currentTopic: string, addToHistory: boolean = true) => {
+    // Use DEFAULT_TOPIC if the caller passed an empty string or undefined
+    const topicToUse = (currentTopic || DEFAULT_TOPIC).trim();
+    if (!topicToUse) return;
 
-  try {
-    const concepts = await generateMedicalMap(topicToUse);
-    const newGraphData = processConcepts(concepts, topicToUse);
-    setGraphData(newGraphData);
+    const currentRequestId = ++requestIdRef.current;
 
-    if (addToHistory) {
-      setSearchHistory(prevHistory => {
-        const newHistory = [topicToUse, ...prevHistory.filter(t => t !== topicToUse)];
-        return newHistory.slice(0, 10); // keep only recent 10
-      });
+    setTopic(topicToUse);
+    setIsLoading(true);
+    setSelectedNode(null);
+    setApiError(null);
+
+    try {
+      const concepts = await generateMedicalMap(topicToUse);
+      if (currentRequestId !== requestIdRef.current) return;
+
+      const newGraphData = processConcepts(concepts, topicToUse);
+      setGraphData(newGraphData);
+
+      if (addToHistory) {
+        setSearchHistory(prevHistory => {
+          const newHistory = [topicToUse, ...prevHistory.filter(t => t !== topicToUse)];
+          return newHistory.slice(0, 10); // keep only recent 10
+        });
+      }
+    } catch (error) {
+      if (currentRequestId !== requestIdRef.current) return;
+      console.error("Failed to generate map:", error);
+      setApiError("API Error: Could not generate map. You may have exceeded your quota. Please try again later.");
+      setGraphData({ nodes: [], links: [] }); // clear graph on error
+    } finally {
+      if (currentRequestId === requestIdRef.current) {
+        setIsLoading(false);
+        setInitialLoad(false);
+        setShowHistory(false);
+      }
     }
-  } catch (error) {
-    console.error("Failed to generate map:", error);
-    setApiError("API Error: Could not generate map. You may have exceeded your quota. Please try again later.");
-    setGraphData({ nodes: [], links: [] }); // clear graph on error
-  } finally {
-    setIsLoading(false);
-    setInitialLoad(false);
-    setShowHistory(false);
-  }
-}, []);
+  }, []);
 
 
   // Fix: Renamed to match the prop in SidePanel
@@ -138,6 +165,14 @@ const [topic, setTopic] = useState('');
   }, []);
 
 
+  const handleSaveMap = useCallback(() => {
+    if (graphData.nodes.length > 0) {
+      localStorage.setItem('medmap-graph', JSON.stringify(graphData));
+      localStorage.setItem('medmap-topic', topic);
+      // Small visual feedback could go here, but relying on browser behavior for now
+    }
+  }, [graphData, topic]);
+
   const MemoizedMindMap = useMemo(() => <MindMap data={graphData} onNodeClick={handleNodeClick} />, [graphData, handleNodeClick]);
 
   return (
@@ -174,7 +209,7 @@ const [topic, setTopic] = useState('');
           animation: move var(--d) linear infinite alternate;
         }
       `}</style>
-      
+
       <Notification message={apiError} onClose={() => setApiError(null)} />
 
       <header className="absolute top-0 left-0 w-full p-4 z-20 flex justify-center mt-16">
@@ -186,7 +221,7 @@ const [topic, setTopic] = useState('');
               onClick={() => setShowHistory(prev => !prev)}
               className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors z-10"
               aria-label="Search History"
-              // Removed ref={historyRef} from button
+            // Removed ref={historyRef} from button
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -206,6 +241,18 @@ const [topic, setTopic] = useState('');
               </svg>
             </button>
           </form>
+          {!initialLoad && (
+            <button
+              onClick={handleSaveMap}
+              className="absolute right-[-48px] top-1/2 -translate-y-1/2 p-2 bg-purple-500 hover:bg-purple-600 rounded-full transition-colors z-10 shadow-lg"
+              aria-label="Save Map"
+              title="Save Map to Local Storage"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+              </svg>
+            </button>
+          )}
           {showHistory && searchHistory.length > 0 && (
             <div className="absolute top-full mt-2 w-full bg-gray-800/90 backdrop-blur-md border border-gray-600 rounded-lg shadow-lg z-30 max-h-60 overflow-y-auto">
               {searchHistory.map((historyTopic, index) => (
@@ -230,11 +277,11 @@ const [topic, setTopic] = useState('');
           <p className="text-xl text-gray-300 max-w-2xl text-center mb-8 animate-fade-in-2">
             Turn complex topic into interactive knowledge galaxies. Start by searching a topic like "Diabetes Mellitus" to see the connections come alive.
           </p>
-          <button 
-            onClick={() => handleGenerateMap(topic)} 
+          <button
+            onClick={() => handleGenerateMap(topic)}
             className="px-8 py-3 bg-cyan-500 text-white font-bold rounded-full hover:bg-cyan-600 transition-transform transform hover:scale-105 animate-fade-in-3"
           >
-            Explore 
+            Explore
           </button>
           <style>{`
             @keyframes fadeIn {
@@ -249,12 +296,12 @@ const [topic, setTopic] = useState('');
       )}
 
       {isLoading && <Loader />}
-      
+
       {!initialLoad && MemoizedMindMap}
 
-      <SidePanel 
-        selectedNode={selectedNode} 
-        onClose={handleClosePanel} 
+      <SidePanel
+        selectedNode={selectedNode}
+        onClose={handleClosePanel}
         onBreakAndStartNewMap={handleBreakAndStartNewMap} // Fix: Changed prop name to match SidePanelProps
         setApiError={setApiError}
       />

@@ -1,8 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { MedicalConcept, QuizQuestion, Flashcard } from '../types';
 
-// Fix: Per coding guidelines, initialize directly with process.env.API_KEY and assume it is available.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize lazily to prevent module-level crash if the API key is missing or undefined at startup.
+let aiInstance: any = null;
+const getAiClient = () => {
+  if (!aiInstance) {
+    // If process.env.API_KEY is undefined, we pass a fallback string so the constructor doesn't throw synchronously
+    const key = process.env.API_KEY || 'MISSING_API_KEY';
+    aiInstance = new GoogleGenAI({ apiKey: key });
+  }
+  return aiInstance;
+};
 
 // Fix: Removed the `model` alias to adhere to the guideline of calling `ai.models.generateContent` directly.
 // const model = ai.models;
@@ -14,12 +22,12 @@ export const generateMedicalMap = async (topic: string): Promise<MedicalConcept[
   - relation_type: A single word describing the relationship to the central topic (e.g., 'cause', 'symptom', 'treatment', 'pathophysiology', 'diagnosis', 'organ_system', 'complication', 'risk_factor').
   - note: A 1-line student-friendly explanation.
   - difficulty: A number from 1 to 5 representing complexity.
-  - system: The primary medical system it belongs to (e.g., 'Ca: The name of the medical concept.rdiovascular', 'Nervous', 'Endocrine', 'Respiratory', 'Gastrointestinal', 'Renal', 'Immune').
+  - system: The primary medical system it belongs to (e.g., 'Cardiovascular', 'Nervous', 'Endocrine', 'Respiratory', 'Gastrointestinal', 'Renal', 'Immune').
   Return a valid JSON array of objects.`;
 
   try {
-    // Fix: Directly call ai.models.generateContent
-    const response = await ai.models.generateContent({
+    // Fix: Directly call models.generateContent from the lazy instance
+    const response = await getAiClient().models.generateContent({
       model: 'gemini-2.5-flash',
       // Fix: Simplified `contents` for a single text prompt per coding guidelines.
       contents: prompt,
@@ -44,7 +52,7 @@ export const generateMedicalMap = async (topic: string): Promise<MedicalConcept[
 
     const jsonText = response.text.trim();
     const concepts = JSON.parse(jsonText);
-    
+
     // Rename 'relation_type' to 'relation' to match internal type
     return concepts.map((c: any) => ({ ...c, relation: c.relation_type }));
 
@@ -70,26 +78,26 @@ export const generateQuizQuestion = async (concept: MedicalConcept): Promise<Qui
   - "explanation": A brief explanation for the correct answer.`;
 
   try {
-    // Fix: Directly call ai.models.generateContent
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    question: { type: Type.STRING },
-                    options: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING }
-                    },
-                    correctAnswer: { type: Type.STRING },
-                    explanation: { type: Type.STRING }
-                },
-                required: ['question', 'options', 'correctAnswer', 'explanation']
-            }
+    // Fix: Directly call models.generateContent from the lazy instance
+    const response = await getAiClient().models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            question: { type: Type.STRING },
+            options: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            },
+            correctAnswer: { type: Type.STRING },
+            explanation: { type: Type.STRING }
+          },
+          required: ['question', 'options', 'correctAnswer', 'explanation']
         }
+      }
     });
 
     const jsonText = response.text.trim();
@@ -115,10 +123,10 @@ export const generateFlashcard = async (concept: MedicalConcept, existingFlashca
   Return a single, valid JSON object with the following keys:
   - "question": A question that tests a key aspect of the concept.
   - "answer": A direct and clear answer to the question.`;
-  
+
   try {
-    // Fix: Directly call ai.models.generateContent
-    const response = await ai.models.generateContent({
+    // Fix: Directly call models.generateContent from the lazy instance
+    const response = await getAiClient().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
@@ -133,7 +141,7 @@ export const generateFlashcard = async (concept: MedicalConcept, existingFlashca
         }
       }
     });
-    
+
     const jsonText = response.text.trim();
     return JSON.parse(jsonText);
 

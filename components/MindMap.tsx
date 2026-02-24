@@ -32,7 +32,7 @@ const MindMap: React.FC<MindMapProps> = ({ data, onNodeClick }) => {
     if (!svgRef.current || !containerRef.current || d3Refs.current) return; // Initialize only once
 
     const { width, height } = containerRef.current.getBoundingClientRect();
-    
+
     const simulation = d3.forceSimulation<Node>()
       .force("link", d3.forceLink<Node, Link>().id(d => d.id).distance(150).strength(0.5))
       .force("charge", d3.forceManyBody().strength(-200))
@@ -82,6 +82,11 @@ const MindMap: React.FC<MindMapProps> = ({ data, onNodeClick }) => {
       .style("border", "1px solid rgba(107, 114, 128, 0.5)");
 
     d3Refs.current = { simulation, g, linkGroup, nodeGroup, tooltip };
+
+    return () => {
+      simulation.stop();
+      tooltip.remove();
+    };
   }, []);
 
   // Update visualization based on data changes
@@ -112,6 +117,7 @@ const MindMap: React.FC<MindMapProps> = ({ data, onNodeClick }) => {
         enter => {
           const newContainer = enter.append("g")
             .attr("class", "node-container")
+            .style("opacity", 0)
             .call(drag(simulation));
 
           const nodeContent = newContainer.append("g")
@@ -149,6 +155,11 @@ const MindMap: React.FC<MindMapProps> = ({ data, onNodeClick }) => {
               tooltip?.style("visibility", "hidden");
             });
 
+          newContainer.transition()
+            .duration(800)
+            .delay((d, i) => i * 50)
+            .style("opacity", 1);
+
           return newContainer;
         },
         update => update,
@@ -159,19 +170,12 @@ const MindMap: React.FC<MindMapProps> = ({ data, onNodeClick }) => {
     nodeContainer.select("text")
       .text(d => d.id);
 
-    // Measure and set dims
+    // Measure and set dims using heuristics instead of getBBox (prevents synchronous reflow thrashing)
     const PADDING_X = 24;
     const PADDING_Y = 16;
-    nodeContainer.each(function(d) {
-      const textNode = d3.select(this).select('text').node();
-      if (textNode) {
-          const bbox = (textNode as SVGTextElement).getBBox();
-          d.width = bbox.width + PADDING_X;
-          d.height = bbox.height + PADDING_Y;
-      } else {
-          d.width = 60;
-          d.height = 40;
-      }
+    nodeContainer.each(function (d) {
+      d.width = Math.max(80, (d.id.length * 9) + PADDING_X);
+      d.height = 24 + PADDING_Y;
     });
 
     nodeContainer.select(".node-rect")
@@ -193,7 +197,7 @@ const MindMap: React.FC<MindMapProps> = ({ data, onNodeClick }) => {
 
     const collideForce = simulation.force<d3.ForceCollide<Node>>("collide");
     if (collideForce) collideForce.radius(d => (Math.max(d.width || 0, d.height || 0) / 2) + 8);
-    
+
     simulation.on("tick", () => {
       // update link positions
       link

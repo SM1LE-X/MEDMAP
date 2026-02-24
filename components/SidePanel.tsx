@@ -51,7 +51,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
       setCurrentFlashcardIndex(0);
       setIsFlashcardFlipped(false);
       setApiError(null); // Clear any existing errors
-      
+
       // Fetch image
       setIsImageLoading(true);
       const getImage = async () => {
@@ -63,7 +63,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
 
     }
   }, [selectedNode, setApiError]);
-  
+
   const handleFocusClick = () => {
     if (selectedNode) {
       onBreakAndStartNewMap(selectedNode.data.concept);
@@ -89,14 +89,14 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
       setIsQuizLoading(false);
     }
   };
-  
+
   const handleGenerateFlashcard = async () => {
     if (!selectedNode) return;
 
     setIsFlashcardLoading(true);
     setIsFlashcardFlipped(false);
     setApiError(null);
-    
+
     try {
       const card = await generateFlashcard(selectedNode.data, flashcards);
       setFlashcards(prev => [...prev, card]);
@@ -112,12 +112,12 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
     if (isAnswerSubmitted) return;
     setSelectedAnswer(option);
   };
-  
+
   const handleSubmitAnswer = () => {
-    if(!selectedAnswer) return;
+    if (!selectedAnswer) return;
     setIsAnswerSubmitted(true);
   }
-  
+
   const handlePrevFlashcard = () => {
     if (currentFlashcardIndex > 0) {
       setCurrentFlashcardIndex(prev => prev - 1);
@@ -134,8 +134,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
 
   const getButtonClass = (option: string) => {
     if (!isAnswerSubmitted) {
-      return selectedAnswer === option 
-        ? 'bg-cyan-600 border-cyan-400' 
+      return selectedAnswer === option
+        ? 'bg-cyan-600 border-cyan-400'
         : 'bg-gray-700 hover:bg-gray-600 border-gray-600';
     }
     // After submission
@@ -158,8 +158,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
 
 
   return (
-    <div className={`fixed top-0 right-0 h-full w-full md:w-1/3 lg:w-1/4 bg-gray-800 bg-opacity-80 backdrop-blur-md text-white shadow-2xl transition-transform transform ${selectedNode ? 'translate-x-0' : 'translate-x-full'} duration-300 ease-in-out z-30`}>
-      <div className="p-6 h-full flex flex-col">
+    <div className={`fixed top-0 right-0 h-full w-full md:w-1/3 lg:w-1/4 bg-gray-900/80 backdrop-blur-2xl border-l border-white/10 text-white shadow-2xl transition-transform transform ${selectedNode ? 'translate-x-0' : 'translate-x-full'} duration-300 ease-in-out z-30`}>
+      <div className="p-8 h-full flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-cyan-300">{concept}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
@@ -170,7 +170,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
         </div>
 
         <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
-           <div className="mb-4">
+          <div className="mb-4">
             {isImageLoading && (
               <div className="w-full h-40 bg-gray-700/50 rounded-md flex justify-center items-center">
                 <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
@@ -192,19 +192,19 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
             <span className="text-sm font-semibold text-gray-400 uppercase">Relation to Topic</span>
             <p className="text-lg capitalize">{relation}</p>
           </div>
-          
+
           <div className="mb-4">
             <span className="text-sm font-semibold text-gray-400 uppercase">System</span>
             <div className="flex items-center mt-1">
               <span className={`px-3 py-1 text-sm font-semibold rounded-full text-white ${systemColor}`}>{system || 'General'}</span>
             </div>
           </div>
-          
+
           <div className="mb-4">
             <span className="text-sm font-semibold text-gray-400 uppercase">Note</span>
             <p className="text-lg bg-gray-700/50 p-3 rounded-md">{note}</p>
           </div>
-          
+
           <div className="mb-4">
             <span className="text-sm font-semibold text-gray-400 uppercase">Difficulty</span>
             <div className="flex items-center mt-1">
@@ -220,14 +220,14 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
             {/* Flashcard Section */}
             {isFlashcardLoading && (
               <div className="flex justify-center items-center p-4">
-                  <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="ml-3">Generating flashcard...</p>
+                <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                <p className="ml-3">Generating flashcard...</p>
               </div>
             )}
-             {flashcards.length > 0 && !isFlashcardLoading && (
+            {flashcards.length > 0 && !isFlashcardLoading && (
               <div>
-                <h3 className="text-lg font-semibold text-cyan-300 mb-2">Flashcard Deck</h3>
-                <div className="flashcard-container" onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)}>
+                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-gray-700 pb-2">Flashcard Deck</h3>
+                <div className="flashcard-container" onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)} aria-live="polite">
                   <div className={`flashcard-inner ${isFlashcardFlipped ? 'is-flipped' : ''}`}>
                     <div className="flashcard-front">
                       <p className="text-lg">{currentFlashcard.question}</p>
@@ -248,22 +248,22 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
                 )}
               </div>
             )}
-            
+
             {/* Quiz Section */}
             {isQuizLoading && (
               <div className="flex justify-center items-center p-4">
-                  <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="ml-3">Generating quiz...</p>
+                <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                <p className="ml-3">Generating quiz...</p>
               </div>
             )}
             {quiz && !isQuizLoading && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-cyan-300">Test Your Knowledge</h3>
-                <p className="text-gray-200">{quiz.question}</p>
+              <div className="space-y-4 mt-6">
+                <h3 className="text-xl font-semibold text-cyan-300 border-b border-gray-700 pb-2">Test Your Knowledge</h3>
+                <p className="text-gray-200 text-lg font-medium">{quiz.question}</p>
                 <div className="space-y-2">
                   {quiz.options.map((option, index) => (
-                    <button 
-                      key={index} 
+                    <button
+                      key={index}
                       onClick={() => handleAnswerSelect(option)}
                       disabled={isAnswerSubmitted}
                       className={`w-full text-left p-3 rounded-md border transition-all duration-200 ${getButtonClass(option)}`}
@@ -273,7 +273,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
                   ))}
                 </div>
                 {!isAnswerSubmitted ? (
-                  <button 
+                  <button
                     onClick={handleSubmitAnswer}
                     disabled={!selectedAnswer}
                     className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
@@ -281,9 +281,9 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
                     Submit Answer
                   </button>
                 ) : (
-                  <div className={`p-3 rounded-md text-white ${selectedAnswer === quiz.correctAnswer ? 'bg-green-500/30' : 'bg-red-500/30'}`}>
-                    <h4 className="font-bold">{selectedAnswer === quiz.correctAnswer ? 'Correct!' : 'Incorrect.'}</h4>
-                    <p className="text-sm mt-1">{quiz.explanation}</p>
+                  <div aria-live="polite" className={`p-4 rounded-xl border ${selectedAnswer === quiz.correctAnswer ? 'bg-green-500/20 border-green-500/50 text-green-100' : 'bg-red-500/20 border-red-500/50 text-red-100'}`}>
+                    <h4 className="font-bold text-lg">{selectedAnswer === quiz.correctAnswer ? '✨ Correct!' : '❌ Incorrect.'}</h4>
+                    <p className="text-sm mt-2 opacity-90">{quiz.explanation}</p>
                   </div>
                 )}
               </div>
@@ -292,26 +292,26 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
         </div>
 
         <div className="mt-auto pt-4 border-t border-gray-700 grid grid-cols-1 gap-2">
-           <button 
+          <button
             onClick={handleFocusClick}
             disabled={isCentralTopic}
             className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
             Focus on this Topic
           </button>
-           <button 
+          <button
             onClick={handleGenerateFlashcard}
             disabled={isFlashcardLoading}
             className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
-              {flashcards.length > 0 ? 'Generate Another Flashcard' : 'Generate Flashcard'}
+            {flashcards.length > 0 ? 'Generate Another Flashcard' : 'Generate Flashcard'}
           </button>
-          <button 
+          <button
             onClick={handleGenerateQuiz}
             disabled={isQuizLoading}
             className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
-              {quiz ? 'Generate Another Quiz' : 'Generate Quiz'}
+            {quiz ? 'Generate Another Quiz' : 'Generate Quiz'}
           </button>
         </div>
       </div>
