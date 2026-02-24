@@ -139,7 +139,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
 
   const handleNextFlashcard = () => {
     if (currentFlashcardIndex < flashcards.length - 1) {
-      setCurrentFlashcardIndex(prev => prev - 1);
+      setCurrentFlashcardIndex(prev => prev + 1);
       setIsFlashcardFlipped(false);
     }
   };
@@ -236,18 +236,32 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
                 <p className="ml-3">Generating flashcard...</p>
               </div>
             )}
-            {flashcards.length > 0 && !isFlashcardLoading && (
-              <div className="mt-4 mb-8">
+            {flashcards.length > 0 && currentFlashcard && !isFlashcardLoading && (
+              <div className="mt-4 mb-6">
                 <h3 className="text-xl font-semibold text-cyan-300 mb-4 border-b border-gray-700 pb-2">Flashcard Deck</h3>
-                <div className="flashcard-container" onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)} aria-live="polite">
-                  <div className={`flashcard-inner ${isFlashcardFlipped ? 'is-flipped' : ''}`}>
-                    <div className="flashcard-front relative shadow-xl">
-                      <p className="text-lg text-center leading-relaxed">{currentFlashcard.question}</p>
-                      <span className="text-xs text-cyan-400 opacity-80 absolute bottom-3 right-4 font-medium tracking-wider">Click to flip ⤵</span>
-                    </div>
-                    <div className="flashcard-back relative shadow-xl">
-                      <p className="text-lg text-center leading-relaxed text-cyan-50">{currentFlashcard.answer}</p>
-                      <span className="text-xs text-cyan-400 opacity-80 absolute bottom-3 right-4 font-medium tracking-wider">Click to flip ⤵</span>
+                <div className="mt-4 mb-6">
+                  <div className="flashcard-container static" onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)} aria-live="polite">
+                    <div className={`flashcard-inner ${isFlashcardFlipped ? 'is-flipped' : ''}`}>
+                      <div className="flashcard-front shadow-xl">
+                        <div className="flex h-full w-full flex-col">
+                          <p className="flex flex-1 items-center justify-center px-2 text-center text-lg leading-relaxed">
+                            {currentFlashcard.question}
+                          </p>
+                          <span className="mt-4 self-end text-xs font-medium tracking-wider text-cyan-400 opacity-80">
+                            Click to flip
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flashcard-back shadow-xl">
+                        <div className="flex h-full w-full flex-col">
+                          <p className="flex flex-1 items-center justify-center px-2 text-center text-lg leading-relaxed text-cyan-50">
+                            {currentFlashcard.answer}
+                          </p>
+                          <span className="mt-4 self-end text-xs font-medium tracking-wider text-cyan-400 opacity-80">
+                            Click to flip
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -365,7 +379,6 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
             align-items: center;
             justify-content: center;
             padding: 1.5rem;
-            padding-bottom: 2.5rem; /* Room for 'Click to flip' */
             border-radius: 0.75rem;
             min-height: 200px;
         }
