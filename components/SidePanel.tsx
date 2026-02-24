@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Node, QuizQuestion, Flashcard } from '../types';
 import { fetchConceptImage } from '../services/wikipediaService';
 import { generateQuizQuestion, generateFlashcard } from '../services/geminiService';
@@ -39,6 +39,18 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlashcardLoading, setIsFlashcardLoading] = useState(false);
   const [isFlashcardFlipped, setIsFlashcardFlipped] = useState(false);
+
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll when new study materials are generated
+  useEffect(() => {
+    if (flashcards.length > 0 || quiz) {
+      // Use setTimeout to allow DOM to paint the new content before scrolling
+      setTimeout(() => {
+        bottomAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+  }, [flashcards.length, quiz]);
 
   useEffect(() => {
     if (selectedNode) {
@@ -127,7 +139,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
 
   const handleNextFlashcard = () => {
     if (currentFlashcardIndex < flashcards.length - 1) {
-      setCurrentFlashcardIndex(prev => prev - 1);
+      setCurrentFlashcardIndex(prev => prev + 1);
       setIsFlashcardFlipped(false);
     }
   };
@@ -224,26 +236,40 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
                 <p className="ml-3">Generating flashcard...</p>
               </div>
             )}
-            {flashcards.length > 0 && !isFlashcardLoading && (
-              <div>
-                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-gray-700 pb-2">Flashcard Deck</h3>
-                <div className="flashcard-container" onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)} aria-live="polite">
-                  <div className={`flashcard-inner ${isFlashcardFlipped ? 'is-flipped' : ''}`}>
-                    <div className="flashcard-front">
-                      <p className="text-lg">{currentFlashcard.question}</p>
-                      <span className="text-xs text-gray-400 absolute bottom-2 right-3">Click to flip</span>
-                    </div>
-                    <div className="flashcard-back">
-                      <p className="text-lg">{currentFlashcard.answer}</p>
-                      <span className="text-xs text-gray-400 absolute bottom-2 right-3">Click to flip</span>
+            {flashcards.length > 0 && currentFlashcard && !isFlashcardLoading && (
+              <div className="mt-4 mb-6">
+                <h3 className="text-xl font-semibold text-cyan-300 mb-4 border-b border-gray-700 pb-2">Flashcard Deck</h3>
+                <div className="mt-4 mb-6">
+                  <div className="flashcard-container static" onClick={() => setIsFlashcardFlipped(!isFlashcardFlipped)} aria-live="polite">
+                    <div className={`flashcard-inner ${isFlashcardFlipped ? 'is-flipped' : ''}`}>
+                      <div className="flashcard-front shadow-xl">
+                        <div className="flex h-full w-full flex-col">
+                          <p className="flex flex-1 items-center justify-center px-2 text-center text-lg leading-relaxed">
+                            {currentFlashcard.question}
+                          </p>
+                          <span className="mt-4 self-end text-xs font-medium tracking-wider text-cyan-400 opacity-80">
+                            Click to flip
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flashcard-back shadow-xl">
+                        <div className="flex h-full w-full flex-col">
+                          <p className="flex flex-1 items-center justify-center px-2 text-center text-lg leading-relaxed text-cyan-50">
+                            {currentFlashcard.answer}
+                          </p>
+                          <span className="mt-4 self-end text-xs font-medium tracking-wider text-cyan-400 opacity-80">
+                            Click to flip
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
                 {flashcards.length > 1 && (
-                  <div className="flex justify-between items-center mt-2">
-                    <button onClick={handlePrevFlashcard} disabled={currentFlashcardIndex === 0} className="px-3 py-1 bg-gray-600 rounded disabled:opacity-50">&lt; Prev</button>
-                    <span className="text-sm text-gray-400">Card {currentFlashcardIndex + 1} of {flashcards.length}</span>
-                    <button onClick={handleNextFlashcard} disabled={currentFlashcardIndex === flashcards.length - 1} className="px-3 py-1 bg-gray-600 rounded disabled:opacity-50">Next &gt;</button>
+                  <div className="flex justify-between items-center mt-4">
+                    <button onClick={handlePrevFlashcard} disabled={currentFlashcardIndex === 0} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded disabled:opacity-50 transition-colors">&lt; Prev</button>
+                    <span className="text-sm font-medium text-gray-400">Card {currentFlashcardIndex + 1} of {flashcards.length}</span>
+                    <button onClick={handleNextFlashcard} disabled={currentFlashcardIndex === flashcards.length - 1} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded disabled:opacity-50 transition-colors">Next &gt;</button>
                   </div>
                 )}
               </div>
@@ -289,6 +315,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
               </div>
             )}
           </div>
+          {/* Invisible anchor for auto-scrolling */}
+          <div ref={bottomAnchorRef} className="h-1 text-transparent" />
         </div>
 
         <div className="mt-auto pt-4 border-t border-gray-700 grid grid-cols-1 gap-2">
@@ -332,38 +360,36 @@ const SidePanel: React.FC<SidePanelProps> = ({ selectedNode, onClose, onBreakAnd
         .flashcard-container {
             perspective: 1000px;
             cursor: pointer;
-            min-height: 150px;
+            width: 100%;
         }
         .flashcard-inner {
-            position: relative;
+            display: grid;
             width: 100%;
-            height: 100%;
-            transition: transform 0.6s;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             transform-style: preserve-3d;
-        }
-        .flashcard-container:hover .flashcard-inner {
-            /* Optional: slight rotation on hover */
         }
         .is-flipped {
             transform: rotateY(180deg);
         }
         .flashcard-front, .flashcard-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+            grid-area: 1 / 1 / 1 / 1;
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px;
-            border-radius: 8px;
-            background-color: #2d3748; /* gray-800 */
-            border: 1px solid #4a5568; /* gray-600 */
-            min-height: 150px;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            min-height: 200px;
+        }
+        .flashcard-front {
+            background-color: rgba(31, 41, 55, 0.95); /* gray-800 */
+            border: 1px solid rgba(75, 85, 99, 0.8); /* gray-600 */
         }
         .flashcard-back {
             transform: rotateY(180deg);
+            background-color: rgba(55, 65, 81, 0.95); /* gray-700 */
+            border: 1px solid rgba(8, 145, 178, 0.5); /* cyan-700/50 */
         }
       `}</style>
     </div>
