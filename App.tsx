@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import MindMap from './components/MindMap';
 import SidePanel from './components/SidePanel';
 import Loader from './components/Loader';
@@ -305,6 +306,7 @@ export const App: React.FC = () => {
         onBreakAndStartNewMap={handleBreakAndStartNewMap} // Fix: Changed prop name to match SidePanelProps
         setApiError={setApiError}
       />
+      <Analytics />
     </div>
   );
 };
